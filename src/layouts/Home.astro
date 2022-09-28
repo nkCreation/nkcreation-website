@@ -1,0 +1,94 @@
+---
+import { Sprite } from "astro-icon";
+import CommonHead from "../components/CommonHead.astro";
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.vue";
+
+export interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <CommonHead />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+  </head>
+  <body>
+    <Sprite.Provider>
+      <div class="home">
+        <div class="home__header">
+          <Header class:list="homeheader" dark={true} />
+        </div>
+
+        <div class="home__page">
+          <slot />
+        </div>
+
+        <Footer />
+      </div>
+    </Sprite.Provider>
+    <style lang="scss">
+      .home {
+        position: relative;
+        float: left;
+        width: 100%;
+      }
+
+      .home__header {
+        height: 0;
+        margin-top: 64px;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+      }
+
+      .home__page {
+        position: relative;
+        z-index: 1;
+        margin-top: -64px;
+      }
+    </style>
+  </body>
+</html>
+
+<script>
+  let headerDark = false;
+  let ticking = false;
+
+  if (!(window as any).scrollListenerRegistered) {
+    window.addEventListener("scroll", () => {
+      (window as any).scrollListenerRegistered = true;
+
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          doSomething(window.scrollY);
+          ticking = false;
+        });
+      }
+
+      ticking = true;
+    });
+  }
+
+  doSomething(window.scrollY);
+  function doSomething(scrollPos: number) {
+    const headerElement = document.querySelector(".homeheader");
+    const height = headerElement?.clientHeight || 0;
+
+    headerDark = !(scrollPos > window.innerHeight - height);
+    headerDark
+      ? headerElement?.classList.add("is-dark")
+      : headerElement?.classList.remove("is-dark");
+
+    document.documentElement.style.setProperty(
+      "--scroll-position",
+      "" + scrollPos
+    );
+  }
+</script>

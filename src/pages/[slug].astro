@@ -1,0 +1,51 @@
+---
+import { gql, request } from "graphql-request";
+import DynamicPage from "../components/DynamicPage.vue";
+import Layout from "../layouts/Layout.astro";
+
+const { slug } = Astro.params;
+const query = gql`
+  query pagesData($filter: Pages_filter) {
+    Pages(filter: $filter) {
+      title
+      subtitle
+      slug
+      content
+      date_updated
+      SEO {
+        title
+        description
+      }
+    }
+  }
+`;
+// Run GraphQL queries/mutations using a static function
+const { Pages: pages } = await request(
+  `${import.meta.env.API_URL}graphql`,
+  query,
+  {
+    filter: {
+      status: {
+        _eq: "published",
+      },
+      slug: {
+        _eq: slug,
+      },
+    },
+  }
+);
+
+export async function getStaticPaths() {
+  const { data } = await (
+    await fetch(
+      `${import.meta.env.API_URL}items/Pages?filter[status][_eq]=published`
+    )
+  ).json();
+
+  return data.map((page: any) => ({ params: { slug: page.slug } }));
+}
+---
+
+<Layout title={pages[0].title + " - nkCreation"}>
+  <DynamicPage page={pages[0]} />
+</Layout>

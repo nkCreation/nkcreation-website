@@ -1,0 +1,232 @@
+---
+import { gql, request } from "graphql-request";
+import Button from "../components/Button.vue";
+import Hero from "../components/Hero.vue";
+import Page from "../components/Page.vue";
+import Quote from "../components/Quote.vue";
+import Home from "../layouts/Home.astro";
+
+const query = gql`
+  query homeData {
+    hero {
+      title
+      button_label
+      message
+      link
+      SEO {
+        title
+        description
+      }
+    }
+    quotes(limit: 4, filter: { status: { _eq: "published" } }) {
+      id
+      author
+      quote
+    }
+    servicePage: service_page {
+      title
+      subtitle
+    }
+    projectPage: project_page {
+      title
+      subtitle
+    }
+    realisations(limit: 2, filter: { featured: { _eq: true } }) {
+      id
+      title
+      slug
+      description
+      thumbnail {
+        id
+        filename_disk
+      }
+    }
+    services(limit: 2) {
+      id
+      title
+      description
+    }
+  }
+`;
+
+const { hero, servicePage, services, projectPage, realisations, quotes } =
+  await request(`${import.meta.env.API_URL}graphql`, query);
+
+const data = {
+  heroData: {
+    ...hero,
+    link: hero.link + "/",
+    title: hero.title.replace(/\n/g, "<br />"),
+    label: hero.button_label,
+  },
+  services: {
+    ...servicePage,
+    items: services,
+  },
+  quotes: {
+    items: quotes,
+  },
+  projects: {
+    ...projectPage,
+    items: realisations.map((realisation: any) => {
+      return {
+        ...realisation,
+        thumbnail: `${import.meta.env.API_URL}assets/${
+          realisation.thumbnail.filename_disk
+        }`,
+      };
+    }),
+  },
+};
+---
+
+<Home
+  title="nkCreation - WebDesigner & Developer in Rennes, FR (35)"
+  description={data.heroData.SEO?.description}
+>
+  <Hero
+    title={data.heroData.title}
+    message={data.heroData.message}
+    link={data.heroData.link}
+    label={data.heroData.label}
+  />
+
+  <Page>
+    <div class="section">
+      <h2 class="has-subtitle">{data.services.title}</h2>
+      <p class="subtitle">{data.services.subtitle}</p>
+      {
+        data.services.items.map((service: any) => (
+          <div class="bloc">
+            <h3>{service.title}</h3>
+            <p>{service.description}</p>
+          </div>
+        ))
+      }
+
+      <div class="button">
+        <Button href="/services/">More services</Button>
+      </div>
+    </div>
+
+    <div class="section-quote">
+      {
+        data.quotes.items.map((quote: any) => (
+          <Quote class:list="quote" author={quote.author}>
+            {quote.quote}
+          </Quote>
+        ))
+      }
+    </div>
+
+    <div class="section">
+      <h2 class="has-subtitle">{data.projects.title}</h2>
+      <p class="subtitle">{data.projects.subtitle}</p>
+      {
+        data.projects.items.map((project: any) => (
+          <div class="bloc project">
+            <a href={`/projects/${project.slug}`} />
+
+            <h3>{project.title}</h3>
+            <img src={project.thumbnail} alt="" />
+            <p>{project.description}</p>
+          </div>
+        ))
+      }
+
+      <div class="button">
+        <Button href="/projects/">See my projects</Button>
+      </div>
+    </div>
+  </Page>
+</Home>
+
+<style lang="scss">
+  @import "../assets/scss/conf";
+
+  .section {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas:
+      "title title title title title . . ."
+      "subtitle subtitle subtitle subtitle subtitle . . ."
+      "bloc1 bloc1 bloc1 . bloc2 bloc2 bloc2 ."
+      "button button button . . . . .";
+    margin-bottom: 4em;
+
+    @include breakpoint($tablet) {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "title"
+        "subtitle"
+        "bloc1"
+        "bloc2"
+        "button";
+    }
+
+    h2 {
+      grid-area: title;
+    }
+
+    h2 + p {
+      grid-area: subtitle;
+    }
+
+    .bloc {
+      &:nth-of-type(1) {
+        grid-area: bloc1;
+      }
+
+      &:nth-of-type(2) {
+        grid-area: bloc2;
+      }
+    }
+
+    .project {
+      position: relative;
+
+      > a {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      img {
+        aspect-ratio: 21 / 9;
+        object-fit: contain;
+        padding: 1em;
+      }
+    }
+
+    .button {
+      grid-area: button;
+      margin-top: 3em;
+    }
+
+    img {
+      box-shadow: 0 0.8rem 2.4rem rgba(var(--nk-color1-rgb), 0.08);
+      padding: 0.8em;
+      width: 66.6666%;
+      background: white;
+    }
+  }
+
+  .section-quote {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas: ". . quote quote quote quote . .";
+    margin-bottom: 4em;
+
+    @include breakpoint($tablet) {
+      grid-template-areas: ". quote quote quote quote quote quote .";
+    }
+  }
+
+  .quote {
+    grid-area: quote;
+  }
+</style>
